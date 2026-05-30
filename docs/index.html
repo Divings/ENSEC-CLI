@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ENSEC</title>
+  <meta name="description" content="EncryptSecureDEC README page" />
+  <style>
+:root{
+  --bg: #0b0f17;
+  --card: #0f1624;
+  --text: #e8eefc;
+  --muted: #b6c2e2;
+  --border: rgba(255,255,255,.12);
+  --link: #7db1ff;
+  --linkHover: #a8c9ff;
+  --codeBg: rgba(255,255,255,.06);
+  --codeBorder: rgba(255,255,255,.10);
+  --shadow: 0 10px 30px rgba(0,0,0,.35);
+  --radius: 18px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+  --sans: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+}
+
+@media (prefers-color-scheme: light){
+  :root{
+    --bg: #f6f8ff;
+    --card: #ffffff;
+    --text: #18223a;
+    --muted: #4b5a7a;
+    --border: rgba(10,20,40,.14);
+    --link: #1b63ff;
+    --linkHover: #124bca;
+    --codeBg: rgba(10,20,40,.05);
+    --codeBorder: rgba(10,20,40,.10);
+    --shadow: 0 10px 26px rgba(10,20,40,.10);
+  }
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: var(--sans);
+  color: var(--text);
+  background:
+    radial-gradient(900px 450px at 20% -10%, rgba(125,177,255,.25), transparent 55%),
+    radial-gradient(800px 420px at 80% 0%, rgba(170,120,255,.18), transparent 60%),
+    var(--bg);
+}
+
+a{color:var(--link); text-decoration:none}
+a:hover{color:var(--linkHover); text-decoration:underline}
+
+.container{
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 28px 18px 60px;
+}
+
+.hero{
+  background: linear-gradient(180deg, rgba(255,255,255,.04), transparent 65%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 26px 22px;
+  margin: 18px 0 24px;
+}
+
+.hero h1{
+  margin: 0 0 6px;
+  font-size: clamp(30px, 4vw, 42px);
+  letter-spacing: .2px;
+}
+
+.hero .sub{
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.content{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 22px 22px 8px;
+}
+
+.content > :first-child{margin-top:0}
+.content > :last-child{margin-bottom:18px}
+
+h2{
+  margin-top: 28px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  font-size: 22px;
+}
+h3{margin-top:22px; font-size:18px}
+
+p, li{line-height:1.65}
+ul{padding-left: 20px}
+hr{border:0; border-top:1px solid var(--border); margin: 22px 0}
+
+code{
+  font-family: var(--mono);
+  font-size: .95em;
+  padding: .15em .35em;
+  border-radius: 10px;
+  background: var(--codeBg);
+  border: 1px solid var(--codeBorder);
+}
+
+pre{
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 14px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--codeBorder);
+  background: var(--codeBg);
+  overflow:auto;
+}
+
+pre code{
+  padding:0;
+  border:0;
+  background: transparent;
+}
+
+blockquote{
+  margin: 18px 0;
+  padding: 12px 14px;
+  border-left: 4px solid var(--link);
+  background: rgba(125,177,255,.08);
+  border-radius: 12px;
+  color: var(--muted);
+}
+
+table{
+  width:100%;
+  border-collapse: collapse;
+  margin: 14px 0 18px;
+  overflow:hidden;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+}
+th, td{
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+th{ text-align:left; color: var(--text); background: rgba(255,255,255,.04) }
+tr:last-child td{border-bottom:0}
+
+.badges{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top: 10px;
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.03);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.footer{
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align:center;
+  opacity:.85;
+}
+</style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>ENSEC</h1>
+      <p class="sub">Secure file encryption toolkit with RSA integration and blockchain-style operation logging.</p>
+      
+<div class="badges">
+  <span class="badge">RPM</span>
+  <span class="badge">AES-GCM</span>
+  <span class="badge">RSA-OAEP</span>
+  <span class="badge">Sign / Verify</span>
+  <span class="badge">CLI</span>
+</div>
+
+    </section>
+
+    <section class="content">
+      
+<p>Secure file encryption toolkit with RSA integration and
+blockchain-style operation logging.</p>
+<p>EncryptSecureDEC is a cryptographic utility designed for secure file
+handling, combining modern encryption standards with operational
+integrity tracking.</p>
+<hr />
+<h2 id="features">✨ Features</h2>
+<ul>
+<li>AES-GCM file encryption</li>
+<li>RSA-OAEP key encryption</li>
+<li>RSA private key password protection (v7.2.0+)</li>
+<li>RSA digital signature support</li>
+<li>Blockchain-style operation logging</li>
+<li>Folder encryption support</li>
+<li>WAV-based binary embedding support</li>
+<li>CLI-based secure operation</li>
+</ul>
+<hr />
+<h2 id="cryptography-overview">🔐 Cryptography Overview</h2>
+<p>EncryptSecureDEC uses:</p>
+<ul>
+<li>AES-256-GCM for symmetric encryption</li>
+<li>RSA-2048 with OAEP (SHA-256) for key encapsulation</li>
+<li>PBKDF2-based key derivation</li>
+<li>Optional password protection for RSA private keys</li>
+</ul>
+<p>Security is not only about algorithms.<br />
+It is also about secure key management.</p>
+<hr />
+<h2 id="installation-rpm">📦 Installation (RPM)</h2>
+<p>Download the latest RPM from the GitHub Releases page:</p>
+<p>👉 <a href="https://github.com/Divings/ENSEC/releases">https://github.com/Divings/ENSEC/releases</a></p>
+<p>Example:</p>
+<pre><code>sudo dnf install ./ENSEC-&lt;version&gt;.rpm</code></pre>
+<p>GitHub Releases provide: - The latest version - The previous version
+only</p>
+<hr />
+<h2 id="commercial-distribution">💼 Commercial Distribution</h2>
+<p>Official binary builds are commercially distributed.</p>
+<p>The paid Yum repository provides:</p>
+<ul>
+<li>Automated updates via <code>dnf update</code></li>
+<li>Extended version retention</li>
+<li>Faster update channel</li>
+<li>Repository-level integrity management</li>
+<li>Priority support</li>
+</ul>
+<p>Source code remains publicly available.</p>
+<hr />
+<h2 id="versioning-policy">🔄 Versioning Policy</h2>
+<p>EncryptSecureDEC follows semantic versioning:</p>
+<p>MAJOR.MINOR.PATCH</p>
+<ul>
+<li>MAJOR: Breaking changes</li>
+<li>MINOR: New features</li>
+<li>PATCH: Bug fixes</li>
+</ul>
+<p>GitHub Releases include only the latest and previous versions.<br />
+Extended version history is available through the commercial
+repository.</p>
+<hr />
+<h2 id="build-from-source">🛠 Build From Source</h2>
+<p>Requirements:</p>
+<ul>
+<li>Python 3.8+</li>
+<li>cryptography</li>
+<li>pycryptodome</li>
+<li>lzma</li>
+<li>SQLite3</li>
+</ul>
+<p>Clone the repository:</p>
+<pre><code>git clone https://github.com/Divings/ENSEC.git
+cd ENSEC</code></pre>
+<p>Run CLI:</p>
+<pre><code>python3 EncryptSecureDEC_CUI.py</code></pre>
+<hr />
+<h2 id="license">⚠ License</h2>
+<p>This software is distributed under a proprietary license.</p>
+<p>Source code is publicly accessible, but redistribution, commercial
+use, and binary distribution are restricted unless explicitly
+permitted.</p>
+<p>See LICENSE file for details.</p>
+<hr />
+<h2 id="author">👤 Author</h2>
+<p>Anvelk Innovations<br />
+contact@anvelk.jp</p>
+
+      <div class="footer">Generated from README.md for GitHub Pages.</div>
+    </section>
+  </div>
+</body>
+</html>
