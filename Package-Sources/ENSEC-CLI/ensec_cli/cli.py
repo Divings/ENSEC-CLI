@@ -15,9 +15,11 @@ from . import rsa_signer
 from . import wavencode
 from . import rsa_encryptor
 from pathlib import Path
-
+from .conf_load import load_config
 
 # OKならそのまま続行
+
+conf=load_config()
 
 BLOCKCHAIN_HEADER = b'BLOCKCHAIN_DATA_START\n'
 def _format_bytes(num: int) -> str:
@@ -209,7 +211,12 @@ def cli_decrypt(file_path, password, memo):
         print("❌ Error: Decryption failed. The password may be incorrect or the file may be tampered with.")
         sys.exit(1)
 
-    output_file = file_path.replace(".vdec.wav", "_decrypted").replace(".vdec", "_decrypted")
+    
+    if conf==True:
+        output_file = file_path.replace(".vdec.wav", "_decrypted").replace(".vdec", "_decrypted")
+    else:
+        output_file = file_path.replace(".vdec.wav", "").replace(".vdec", "")
+
     with open(output_file, 'wb') as f:
         f.write(plaintext)
 

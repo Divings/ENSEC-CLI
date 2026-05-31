@@ -14,8 +14,10 @@ from Crypto.Protocol.KDF import PBKDF2
 import rsa_signer
 import wavencode
 import rsa_encryptor
+from conf_load impott load_config
 from pathlib import Path
 
+conf = load_config()
 
 # OKならそのまま続行
 
@@ -208,8 +210,10 @@ def cli_decrypt(file_path, password, memo):
     except ValueError:
         print("❌ Error: Decryption failed. The password may be incorrect or the file may be tampered with.")
         sys.exit(1)
-
-    output_file = file_path.replace(".vdec.wav", "_decrypted").replace(".vdec", "_decrypted")
+    if conf==True:
+        output_file = file_path.replace(".vdec.wav", "_decrypted").replace(".vdec", "_decrypted")
+    else:
+        output_file = file_path.replace(".vdec.wav", "").replace(".vdec", "")
     with open(output_file, 'wb') as f:
         f.write(plaintext)
 
