@@ -14,7 +14,7 @@ from Crypto.Protocol.KDF import PBKDF2
 import rsa_signer
 import wavencode
 import rsa_encryptor
-from conf_load impott load_config
+from conf_load import load_config
 from pathlib import Path
 
 conf = load_config()
