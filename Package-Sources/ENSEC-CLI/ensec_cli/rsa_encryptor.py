@@ -225,7 +225,7 @@ def ensure_dirs():
     TRUSTED_DIR.mkdir(parents=True, exist_ok=True)
 
 ensure_dirs()
-
+# from cryptography.hazmat.backends import default_backend
 # ===============================================
 # RSA Key Generation
 # ===============================================
@@ -240,11 +240,20 @@ def ensure_rsa_keys():
 
     if not RSA_KEY_PATH.exists() or not RSA_PUB_PATH.exists():
         print("[INFO] Generating new RSA key pair...")
-
-        private_key = rsa.generate_private_key(
+        try:
+            private_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=2048
-        )
+            )
+        except TypeError:
+            from cryptography.hazmat.backends import default_backend
+
+            private_key = rsa.generate_private_key(
+                public_exponent=65537,
+                key_size=2048,
+            backend=default_backend()
+            )
+        
         public_key = private_key.public_key()
 
         # ★ここが追加ポイント：設定で暗号化ONならパスワード付きで保存
