@@ -16,13 +16,11 @@ from . import wavencode
 from . import rsa_encryptor
 from pathlib import Path
 from .conf_load import load_config
-from . import __version__
+from . import __version__ as VERSION
 
 # OKならそのまま続行
 
 conf=load_config()
-
-
 
 BLOCKCHAIN_HEADER = b'BLOCKCHAIN_DATA_START\n'
 def _format_bytes(num: int) -> str:
@@ -289,12 +287,9 @@ def main():
     parser.add_argument("--dir", action="store_true",help="Encrypt Dir mode")
     parser.add_argument("--pubkey", help="Path to public key file (only required in RSA encrypt mode)")
     parser.add_argument("--keyfile",help="Use a file as the password source for encryption/decryption")
-    parser.add_argument("--version",help="Show ENSEC_CLI Version")
+    parser.add_argument("--version",action="version",version=f"ENSEC_CLI {VERSION}")
     args = parser.parse_args()
 
-    if args.version:
-        print(__version__)
-        sys.exit(0)
     # --- validate RSA/pubkey usage ---
         # --- validate RSA/pubkey usage ---
     if args.rsa:
