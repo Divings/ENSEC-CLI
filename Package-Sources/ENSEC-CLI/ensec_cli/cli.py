@@ -16,10 +16,13 @@ from . import wavencode
 from . import rsa_encryptor
 from pathlib import Path
 from .conf_load import load_config
+from . import __version__
 
 # OKならそのまま続行
 
 conf=load_config()
+
+
 
 BLOCKCHAIN_HEADER = b'BLOCKCHAIN_DATA_START\n'
 def _format_bytes(num: int) -> str:
@@ -251,7 +254,29 @@ def cli_verify_chain(file_path):
 # --- RSA key check at startup ---
 rsa_encryptor.ensure_rsa_keys()
 from .utils import decrypt_folder_cli,encrypt_folder
+def password_from_keyfile(keyfile_path: str) -> str:
+    """
+    キーファイルの内容からパスワード相当の文字列を生成する。
+    ファイル内容が1bitでも変わると復号できなくなる。
+    """
+    path = Path(keyfile_path)
 
+    if not path.is_file():
+        print(f"❌ Error: Key file not found - {keyfile_path}")
+        sys.exit(1)
+
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+    except Exception as e:
+        print(f"❌ Error: Failed to read key file - {e}")
+        sys.exit(1)
+
+    if not data:
+        print("❌ Error: Key file is empty.")
+        sys.exit(1)
+
+    return hashlib.sha256(data).hexdigest()
 def main():
     parser = argparse.ArgumentParser(description="EncryptSecureDEC CLI")
     parser.add_argument("mode",choices=["encrypt","decrypt","verify-chain","sign",
@@ -263,8 +288,13 @@ def main():
     parser.add_argument("--rsa", action="store_true",help="Encrypt / Decrypt RSA Mode")
     parser.add_argument("--dir", action="store_true",help="Encrypt Dir mode")
     parser.add_argument("--pubkey", help="Path to public key file (only required in RSA encrypt mode)")
+    parser.add_argument("--keyfile",help="Use a file as the password source for encryption/decryption")
+    parser.add_argument("--version",help="Show ENSEC_CLI Version")
     args = parser.parse_args()
 
+    if args.version:
+        print(__version__)
+        sys.exit(0)
     # --- validate RSA/pubkey usage ---
         # --- validate RSA/pubkey usage ---
     if args.rsa:
@@ -287,7 +317,14 @@ def main():
         sys.exit(result)
 
     if not args.rsa and ext != ".rdec" and args.mode != "sign" and args.mode != "verify-sign" and args.dir!=True and ext!=".esdc":
-        password = args.password or getpass.getpass("🔑 Enter password: ")
+        if args.keyfile and args.password:
+            print("❌ Error: --password and --keyfile cannot be used together.")
+            sys.exit(1)
+        
+        if args.keyfile:
+            password = password_from_keyfile(args.keyfile)
+        else:
+            password = args.password or getpass.getpass("🔑 Enter password: ")
 
     # Check if file exists
     if not os.path.isfile(args.file) and args.dir!=True:
