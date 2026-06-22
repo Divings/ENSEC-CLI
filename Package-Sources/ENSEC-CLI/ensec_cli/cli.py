@@ -17,10 +17,14 @@ from . import rsa_encryptor
 from pathlib import Path
 from .conf_load import load_config
 from . import __version__ as VERSION
-
+from .ecc import *
+from .bin_ext import *
 # OKならそのまま続行
 
+is_split_enabled=False
 conf=load_config()
+
+ecc = False
 
 BLOCKCHAIN_HEADER = b'BLOCKCHAIN_DATA_START\n'
 def _format_bytes(num: int) -> str:
@@ -164,26 +168,58 @@ def cli_encrypt(file_path, password, memo):
     username = getpass.getuser()
 
     try:
-        with lzma.open(file_path + ".vdec", 'rb') as f:
-            data = f.read()
+        with open(file_path + ".vdec", 'rb') as f:
+            raw_data = f.read()
+        if ecc==True:
+            try:
+                data = recover_data(raw_data)
+                if data is None:
+                    data = lzma.decompress(raw_data)
+            except(ValueError, lzma.LZMAError):
+                data = lzma.decompress(raw_data)
+        else:
+            data=lzma.decompress(raw_data)
         split_index = data.index(BLOCKCHAIN_HEADER)
         chain_json = data[split_index + len(BLOCKCHAIN_HEADER):].decode('utf-8')
         blockchain = Blockchain.from_json(chain_json)
-    except:
+    except Exception as e:
+        if os.path.exists(file_path + ".vdec") :
+            print("警告:既存のブロックチェーンデータの読み込みに失敗しました。\n新規にブロックチェーンを作成します。")
         blockchain = Blockchain()
+
     block = Block(file_hash, blockchain.chain[-1].hash if blockchain.chain else "0", "Encrypt", file_hash, username, memo)
     blockchain.add_block(block)
 
     encrypted_data = salt + nonce + ciphertext + tag
     blockchain_data = BLOCKCHAIN_HEADER + blockchain.to_json().encode('utf-8')
 
+    combined_data = encrypted_data + blockchain_data
+    # 先にLZMA圧縮
+    compressed_data = lzma.compress(combined_data)
+
+    if ecc==True and not is_split_enabled:
+        ecc_data = add_ecc(compressed_data)
+    else:
+        ecc_data = compressed_data
+
     out_path = file_path + ".vdec"
-    with lzma.open(out_path, 'wb') as f:
-        f.write(encrypted_data)
-        f.write(blockchain_data)
+    with open(out_path, 'wb') as f:
+        f.write(ecc_data)
+
+    if is_split_enabled:
+        a = split_file_with_header(out_path)
+        if a is not None:
+            display_path = a[0]
+        else:   
+            display_path = out_path
+    else:
+        display_path = out_path
+
+    if is_split_enabled:
+        delete_pre_file(out_path)
     if deletemode["mode"] == True:
         delete_pre_file(file_path)
-    print(f"✅ Encryption completed: {out_path}")
+    print(f"✅ Encryption completed: {display_path}")
 
 def cli_decrypt(file_path, password, memo):
     if file_path.endswith(".wav"):
@@ -191,8 +227,41 @@ def cli_decrypt(file_path, password, memo):
             wav_bytes = f.read()
         data = wavencode.wav_bytes_to_binary(wav_bytes)
     else:
-        with lzma.open(file_path, 'rb') as f:
-            data = f.read()
+        try:
+            with open(file_path, 'rb') as f:
+                data = f.read()
+            if  get_file_extension(file_path)!=".vdec0":  
+            # 分割ファイルでない場合はECC復元とLZMA展開を試みる。失敗したら（分割ファイルでない場合)LZMA展開のみ試みる。
+                if ecc==True:
+                    data = recover_data(data)  # ECC復元とLZMA展開を試みる（成功すればdataが更新される）
+            
+                    if data is None:
+                        raise ValueError("データの復元に失敗")
+                else:
+                    data = lzma.decompress(data)
+            elif get_file_extension(file_path)==".vdec0":
+                try:
+                    catc = merge_from_part0(file_path)
+                    if catc!=None:
+                        file_path=catc
+                        with open(file_path, 'rb') as f:
+                            data = f.read()
+                        data = lzma.decompress(data)
+                except Exception as e:
+                    print(f"エラー:次のエラーが発生しました:\n{e}")
+                    return None
+            else:
+                data = lzma.decompress(data)
+        except ValueError as e:
+            print("エラー:ファイルの読み込みに失敗しました")
+            print("ECCでも復元できないくらいにファイルが破損している可能性があります")
+            return
+        except EOFError:
+            print("エラー:圧縮データが途中で途切れています\n（ファイルが破損している可能性があります）\n分割データの場合必要なパーツが足りません")
+            return
+        except lzma.LZMAError:
+            print("エラー:LZMA展開に失敗しました")
+            return
 
     split_index = data.index(BLOCKCHAIN_HEADER)
     crypto_data = data[:split_index]
@@ -225,12 +294,24 @@ def cli_decrypt(file_path, password, memo):
     file_hash = hashlib.sha256(ciphertext).hexdigest()
     block = Block(file_hash, blockchain.chain[-1].hash if blockchain.chain else "0", "Decrypt", file_hash, username, memo)
     blockchain.add_block(block)
+    
+    # 暗号バイト列
+    encrypted_data = salt + nonce + ciphertext + tag
+    blockchain_data = BLOCKCHAIN_HEADER + blockchain.to_json().encode('utf-8')
+
+    combined_data = encrypted_data + blockchain_data
+    
+    compressed_data = lzma.compress(combined_data)
+    
+    if ecc==True:
+        ecc_data = add_ecc(compressed_data)
+    else:
+        ecc_data = compressed_data
 
     if not file_path.endswith(".wav"):
-        with lzma.open(file_path, 'wb') as f:
-            f.write(salt + nonce + ciphertext + tag)
-            f.write(BLOCKCHAIN_HEADER)
-            f.write(blockchain.to_json().encode('utf-8'))
+        with open(file_path, 'wb') as f:
+            f.write(ecc_data)
+            
 
     print(f"✅ Decryption completed: {output_file}")
 
@@ -239,8 +320,15 @@ def cli_verify_chain(file_path):
         with open(file_path, 'rb') as f:
             data = wavencode.wav_bytes_to_binary(f.read())
     else:
-        with lzma.open(file_path, 'rb') as f:
+        with open(file_path, 'rb') as f:
             data = f.read()
+        if ecc == True:
+            data = recover_data(data)
+            if data is None:
+                print("❌ Error: データの復元に失敗しました")
+                return
+        else:
+            data = lzma.decompress(data)
     split_index = data.index(BLOCKCHAIN_HEADER)
     chain_json = data[split_index + len(BLOCKCHAIN_HEADER):].decode('utf-8')
     blockchain = Blockchain.from_json(chain_json)
@@ -275,7 +363,9 @@ def password_from_keyfile(keyfile_path: str) -> str:
         sys.exit(1)
 
     return hashlib.sha256(data).hexdigest()
+
 def main():
+    global ecc
     parser = argparse.ArgumentParser(description="EncryptSecureDEC CLI")
     parser.add_argument("mode",choices=["encrypt","decrypt","verify-chain","sign",
                                         "verify-sign","key-protect-on","key-protect-off"])
@@ -288,8 +378,14 @@ def main():
     parser.add_argument("--pubkey", help="Path to public key file (only required in RSA encrypt mode)")
     parser.add_argument("--keyfile",help="Use a file as the password source for encryption/decryption")
     parser.add_argument("--version",action="version",version=f"ENSEC_CLI {VERSION}")
+    parser.add_argument("--ecc", action="store_true",help="Enable ECC protection")
+    parser.add_argument("--split",action="store_true",help="Split encrypted file")
     args = parser.parse_args()
-
+    if args.split:
+        global is_split_enabled
+        is_split_enabled=True
+    if args.ecc:
+        ecc=True
     # --- validate RSA/pubkey usage ---
         # --- validate RSA/pubkey usage ---
     if args.rsa:
@@ -327,7 +423,7 @@ def main():
         sys.exit(1)
 
     # For decrypt mode, check extension
-    if args.mode == "decrypt" and not (args.file.endswith(".vdec") or args.file.endswith(".rdec") or args.file.endswith(".esdc")):
+    if args.mode == "decrypt" and not (args.file.endswith(".vdec") or args.file.endswith(".rdec") or args.file.endswith(".esdc") or args.file.endswith(".vdec0")):
         print(f"❌ Error: The file for decryption must have a '.vdec' or '.rdec' extension.")
         sys.exit(1)
 
