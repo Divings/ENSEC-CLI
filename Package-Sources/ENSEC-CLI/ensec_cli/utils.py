@@ -5,20 +5,24 @@ from Crypto.PublicKey import RSA
 #import tkinter as tk
 #from tkinter import ttk, messagebox
 
-def _default_app_dir() -> str:
-    base = os.getenv("APPDATA") or os.path.expanduser("~")
-    folder = os.path.join(base, "EncryptSecureDEC")
-    os.makedirs(folder, exist_ok=True)
-    return folder
+from pathlib import Path
+import os
+import hashlib
+from Crypto.PublicKey import RSA
 
-default_keys=_default_app_dir()+"\\key"
+APP_NAME = "ENSEC"
+
+def _home_for_xdg():
+    return Path.home()
+
+HOME = _home_for_xdg()
+XDG_DATA_HOME = Path(os.getenv("XDG_DATA_HOME", HOME / ".local" / "share"))
+DATA_DIR = XDG_DATA_HOME / APP_NAME
 
 def _trusted_dir() -> str:
-    # default_keys = ".../EncryptSecureDEC/Key" を想定
-    app_dir = os.path.dirname(default_keys)     # ".../EncryptSecureDEC"
-    d = os.path.join(app_dir, "TrustedKeys")
-    os.makedirs(d, exist_ok=True)
-    return d
+    d = DATA_DIR / "TrustedKeys"
+    d.mkdir(parents=True, exist_ok=True)
+    return str(d)
 
 def _sha256_fp(pem_bytes: bytes) -> str:
     h = hashlib.sha256(pem_bytes).hexdigest()

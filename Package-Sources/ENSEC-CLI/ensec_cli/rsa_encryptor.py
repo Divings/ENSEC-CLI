@@ -3,6 +3,7 @@ from pathlib import Path
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding, rsa
 from Crypto.Cipher import AES
+from .ecc import wrap_rdec_ecc, unwrap_rdec_ecc
 
 # ===============================================
 # Constants
@@ -401,7 +402,7 @@ def decrypt_rsa_file(data: bytes, user="unknown", memo="") -> bytes:
 # ===============================================
 # File-Level Helpers
 # ===============================================
-def encrypt_file_with_dialog(file_path=None, pubkey=None):
+def encrypt_file_with_dialog(file_path=None, pubkey=None, use_ecc=False):
     if not file_path:
         return None
 
@@ -415,8 +416,10 @@ def encrypt_file_with_dialog(file_path=None, pubkey=None):
     if not data:
         return None
 
+    if use_ecc:
+        data = wrap_rdec_ecc(data)
     out_path = file_path + ".rdec"
-    with open(out_path, "wb") as out:
+    with open(out_path, "xb") as out:
         out.write(data)
 
     print(f"[INFO] File encrypted: {out_path}")
@@ -429,6 +432,12 @@ def decrypt_file_with_dialog(file_path=None):
 
     with open(file_path, "rb") as f:
         blob = f.read()
+
+    try:
+        blob = unwrap_rdec_ecc(blob)
+    except ValueError as exc:
+        print(f"[ERROR] ECC recovery failed: {exc}")
+        return None
 
     user = getpass.getuser()
     memo = ""  # No GUI memo here in CUI mode

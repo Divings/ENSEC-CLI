@@ -4,11 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ensec-cli"
-version = "2.1.0"
+version = "3.0.0"
 description = "EncryptSecureDEC Open Source CLI"
 requires-python = ">=3.9"
 readme = "README.md"
+authors = [
+    { name = "Anvelk Innovations LLC." }
+]
 
+maintainers = [
+    { name = "Anvelk Innovations LLC." }
+]
 dependencies = [
     "pycryptodome",
     "cryptography",

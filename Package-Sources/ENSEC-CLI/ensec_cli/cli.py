@@ -368,7 +368,8 @@ def main():
     global ecc
     parser = argparse.ArgumentParser(description="EncryptSecureDEC CLI")
     parser.add_argument("mode",choices=["encrypt","decrypt","verify-chain","sign",
-                                        "verify-sign","key-protect-on","key-protect-off"])
+                                        "verify-sign","key-protect-on","key-protect-off",
+                                         "verify-file","repair-file","recover-ecc"])
     parser.add_argument("file", help="Target file path")
     parser.add_argument("--memo", default="", help="Operation memo")
     parser.add_argument("--password", help="Password for encryption/decryption (prompted if omitted)")
@@ -379,6 +380,7 @@ def main():
     parser.add_argument("--keyfile",help="Use a file as the password source for encryption/decryption")
     parser.add_argument("--version",action="version",version=f"ENSEC_CLI {VERSION}")
     parser.add_argument("--ecc", action="store_true",help="Enable ECC protection")
+    parser.add_argument("--output", help="Output path for repair-file/recover-ecc")
     parser.add_argument("--split",action="store_true",help="Split encrypted file")
     args = parser.parse_args()
     if args.split:
@@ -386,6 +388,37 @@ def main():
         is_split_enabled=True
     if args.ecc:
         ecc=True
+    # --- ECC-only commands: no password or RSA key required ---
+    if args.mode in ("verify-file", "repair-file", "recover-ecc"):
+        from .ecc import verify_ecc_file, repair_ecc_file, extract_ecc_payload
+        if not os.path.isfile(args.file):
+            parser.error(f"File not found: {args.file}")
+        if not args.file.lower().endswith((".vdec", ".rdec")):
+            parser.error("ECC-only commands support .vdec and .rdec files")
+        if args.file.lower().endswith(".rdec"):
+            from .ecc import verify_rdec_ecc_file, repair_rdec_ecc_file, extract_rdec_ecc_payload
+            verify_ecc_file = verify_rdec_ecc_file
+            repair_ecc_file = repair_rdec_ecc_file
+            extract_ecc_payload = extract_rdec_ecc_payload
+        try:
+            if args.mode == "verify-file":
+                status = verify_ecc_file(args.file)
+                if status == "healthy":
+                    print("[OK] ECCデータは正常です（暗号認証は未実施）")
+                else:
+                    print("[WARN] ECCで訂正可能な差異を検出しました。元ファイルは変更していません")
+                return
+            if args.mode == "repair-file":
+                result = repair_ecc_file(args.file, args.output)
+                print("[OK] 修復不要" if result == "healthy" else f"[OK] 修復済みファイル: {result}")
+                return
+            result = extract_ecc_payload(args.file, args.output)
+            print(f"[OK] ECC除去済みデータ: {result}")
+            return
+        except (OSError, ValueError) as exc:
+            print(f"[ERROR] {exc}", file=sys.stderr)
+            sys.exit(1)
+
     # --- validate RSA/pubkey usage ---
         # --- validate RSA/pubkey usage ---
     if args.rsa:
@@ -478,7 +511,7 @@ def main():
     # --- RSA Mode ---
     if args.rsa and args.mode == "encrypt":
         pubkey_path = args.pubkey if args.pubkey else str(rsa_encryptor.RSA_PUB_PATH)
-        rsa_encryptor.encrypt_file_with_dialog(args.file, pubkey_path)
+        rsa_encryptor.encrypt_file_with_dialog(args.file, pubkey_path, use_ecc=args.ecc)
         sys.exit()
     elif args.rsa and args.mode == "decrypt":
         rsa_encryptor.decrypt_file_with_dialog(args.file)
